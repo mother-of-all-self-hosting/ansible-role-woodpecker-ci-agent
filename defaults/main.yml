@@ -1,0 +1,44 @@
+---
+# Project source code URL: https://github.com/woodpecker-ci/woodpecker
+
+devture_woodpecker_ci_agent_enabled: true
+
+devture_woodpecker_ci_agent_identifier: devture-woodpecker-ci-agent
+
+devture_woodpecker_ci_agent_uid: ''
+devture_woodpecker_ci_agent_gid: ''
+
+devture_woodpecker_ci_agent_container_image: "docker.io/woodpeckerci/woodpecker-agent:{{ devture_woodpecker_ci_agent_container_image_tag }}"
+devture_woodpecker_ci_agent_container_image_tag: v0.15.5
+devture_woodpecker_ci_agent_container_image_force_pull: "{{ devture_woodpecker_ci_agent_container_image.endswith(':latest') }}"
+
+devture_woodpecker_ci_agent_base_path: "/woodpecker-ci-agent"
+
+devture_woodpecker_ci_agent_docker_socket_path: /var/run/docker.sock
+
+# devture_woodpecker_ci_agent_config_server controls WOODPECKER_SERVER - `host:port` of the Woodpecker CI server's gRPC port
+# Note: this is NOT the HTTP port.
+# Example: `woodpecker-server:9000`
+devture_woodpecker_ci_agent_config_server: ''
+
+# devture_woodpecker_ci_agent_config_agent_secret controls WOODPECKER_AGENT_SECRET -
+# A shared secret used by server and agents to authenticate communication.
+devture_woodpecker_ci_agent_config_agent_secret: ''
+
+devture_woodpecker_ci_agent_systemd_required_systemd_services_list: ['docker.service']
+
+# devture_woodpecker_ci_agent_container_additional_environment_variables contains a multiline string with additional environment variables to pass to the container.
+#
+# Example:
+# devture_woodpecker_ci_agent_container_additional_environment_variables: |
+#   VAR=1
+#   ANOTHER=value
+devture_woodpecker_ci_agent_container_additional_environment_variables: ''
+
+devture_woodpecker_ci_agent_container_network: woodpecker-ci
+
+# A list of additional container networks that the container would be connected to.
+# The playbook does not create these networks, so make sure they already exist.
+#
+# For background, see: https://github.com/spantaleev/matrix-docker-ansible-deploy/issues/1498
+devture_woodpecker_ci_agent_container_additional_networks: []
