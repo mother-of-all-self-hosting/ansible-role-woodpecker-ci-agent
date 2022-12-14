@@ -1,12 +1,5 @@
 ---
 
-- name: Ensure Woodpecker CI agent image is pulled
-  community.docker.docker_image:
-    name: "{{ devture_woodpecker_ci_agent_container_image }}"
-    source: "{{ 'pull' if ansible_version.major > 2 or ansible_version.minor > 7 else omit }}"
-    force_source: "{{ devture_woodpecker_ci_agent_container_image_force_pull if ansible_version.major > 2 or ansible_version.minor >= 8 else omit }}"
-    force: "{{ omit if ansible_version.major > 2 or ansible_version.minor >= 8 else devture_woodpecker_ci_agent_container_image_force_pull }}"
-
 - name: Ensure Woodpecker CI agent paths exist
   ansible.builtin.file:
     path: "{{ item }}"
@@ -26,6 +19,18 @@
     mode: 0640
   with_items:
     - env
+
+- name: Ensure Woodpecker CI agent image is pulled
+  community.docker.docker_image:
+    name: "{{ devture_woodpecker_ci_agent_container_image }}"
+    source: "{{ 'pull' if ansible_version.major > 2 or ansible_version.minor > 7 else omit }}"
+    force_source: "{{ devture_woodpecker_ci_agent_container_image_force_pull if ansible_version.major > 2 or ansible_version.minor >= 8 else omit }}"
+    force: "{{ omit if ansible_version.major > 2 or ansible_version.minor >= 8 else devture_woodpecker_ci_agent_container_image_force_pull }}"
+
+- name: Ensure Woodpecker CI agent container network is created
+  community.general.docker_network:
+    name: "{{ devture_woodpecker_ci_agent_container_network }}"
+    driver: bridge
 
 - name: Ensure Woodpecker CI agent systemd service installed
   ansible.builtin.template:
