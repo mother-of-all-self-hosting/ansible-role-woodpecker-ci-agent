@@ -3,16 +3,19 @@
 
 devture_woodpecker_ci_agent_enabled: true
 
+devture_woodpecker_ci_agent_version: v0.15.6
+
 devture_woodpecker_ci_agent_identifier: devture-woodpecker-ci-agent
 
 devture_woodpecker_ci_agent_uid: ''
 devture_woodpecker_ci_agent_gid: ''
 
-devture_woodpecker_ci_agent_container_image: "docker.io/woodpeckerci/woodpecker-agent:{{ devture_woodpecker_ci_agent_container_image_tag }}"
-devture_woodpecker_ci_agent_container_image_tag: v0.15.6
+devture_woodpecker_ci_agent_container_image: "{{ devture_woodpecker_ci_agent_container_image_registry_prefix }}woodpeckerci/woodpecker-agent:{{ devture_woodpecker_ci_agent_container_image_tag }}"
+devture_woodpecker_ci_agent_container_image_tag: "{{ devture_woodpecker_ci_agent_version }}"
 devture_woodpecker_ci_agent_container_image_force_pull: "{{ devture_woodpecker_ci_agent_container_image.endswith(':latest') }}"
+devture_woodpecker_ci_agent_container_image_registry_prefix: docker.io/
 
-devture_woodpecker_ci_agent_base_path: "/woodpecker-ci-agent"
+devture_woodpecker_ci_agent_base_path: "/{{ devture_woodpecker_ci_agent_identifier }}"
 
 devture_woodpecker_ci_agent_docker_socket_path: /var/run/docker.sock
 
@@ -35,10 +38,8 @@ devture_woodpecker_ci_agent_systemd_required_systemd_services_list: ['docker.ser
 #   ANOTHER=value
 devture_woodpecker_ci_agent_container_additional_environment_variables: ''
 
-devture_woodpecker_ci_agent_container_network: woodpecker-ci
+devture_woodpecker_ci_agent_container_network: "{{ devture_woodpecker_ci_agent_identifier }}"
 
 # A list of additional container networks that the container would be connected to.
 # The playbook does not create these networks, so make sure they already exist.
-#
-# For background, see: https://github.com/spantaleev/matrix-docker-ansible-deploy/issues/1498
 devture_woodpecker_ci_agent_container_additional_networks: []
