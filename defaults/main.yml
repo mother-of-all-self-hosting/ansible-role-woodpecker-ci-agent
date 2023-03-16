@@ -3,7 +3,7 @@
 
 devture_woodpecker_ci_agent_enabled: true
 
-devture_woodpecker_ci_agent_version: v0.15.6
+devture_woodpecker_ci_agent_version: v0.15.7
 
 devture_woodpecker_ci_agent_identifier: devture-woodpecker-ci-agent
 
