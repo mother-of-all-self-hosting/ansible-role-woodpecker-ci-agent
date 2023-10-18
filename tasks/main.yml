@@ -11,3 +11,10 @@
 
     - when: devture_woodpecker_ci_agent_enabled | bool
       ansible.builtin.include_tasks: "{{ role_path }}/tasks/install.yml"
+
+- tags:
+    - setup-all
+    - setup-woodpecker-ci-agent
+  block:
+    - when: not devture_woodpecker_ci_agent_enabled | bool
+      ansible.builtin.include_tasks: "{{ role_path }}/tasks/uninstall.yml"
