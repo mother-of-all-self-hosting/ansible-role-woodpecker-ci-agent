@@ -30,6 +30,12 @@ devture_woodpecker_ci_agent_config_agent_secret: ''
 
 devture_woodpecker_ci_agent_systemd_required_systemd_services_list: ['docker.service']
 
+# devture_woodpecker_ci_agent_config_log_level configures the logging level.
+# Valid values: 'trace', 'debug', 'info', 'warn', 'error', 'fatal', 'panic', 'disabled' and empty ('')
+#
+# See: https://woodpecker-ci.org/docs/administration/server-config#woodpecker_log_level
+devture_woodpecker_ci_agent_config_log_level: info
+
 # devture_woodpecker_ci_agent_container_additional_environment_variables contains a multiline string with additional environment variables to pass to the container.
 #
 # Example:
