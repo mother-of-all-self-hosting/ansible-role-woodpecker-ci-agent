@@ -24,6 +24,15 @@ devture_woodpecker_ci_agent_docker_socket_path: /var/run/docker.sock
 # Example: `woodpecker-server:9000`
 devture_woodpecker_ci_agent_config_server: ''
 
+# devture_woodpecker_ci_agent_config_grpc_secure controls whether
+# Woodpecker Agent should connect to the server (over gRPC) using a
+# secure channel.
+devture_woodpecker_ci_agent_config_grpc_secure: false
+
+# devture_woodpecker_ci_agent_config_grpc_verify controls whether
+# Woodpecker Agent should verify the server's TLS certificate.
+devture_woodpecker_ci_agent_config_grpc_verify: false
+
 # devture_woodpecker_ci_agent_config_agent_secret controls WOODPECKER_AGENT_SECRET -
 # A shared secret used by server and agents to authenticate communication.
 devture_woodpecker_ci_agent_config_agent_secret: ''
