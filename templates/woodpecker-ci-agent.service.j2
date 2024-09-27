@@ -1,6 +1,6 @@
 [Unit]
 Description=Woodpecker CI Agent
-{% for service in devture_woodpecker_ci_agent_systemd_required_systemd_services_list %}
+{% for service in woodpecker_ci_agent_systemd_required_systemd_services_list %}
 Requires={{ service }}
 After={{ service }}
 {% endfor %}
@@ -9,32 +9,32 @@ DefaultDependencies=no
 [Service]
 Type=simple
 Environment="HOME={{ devture_systemd_docker_base_systemd_unit_home_path }}"
-ExecStartPre=-{{ devture_systemd_docker_base_host_command_sh }} -c '{{ devture_systemd_docker_base_host_command_docker }} stop --time={{ devture_systemd_docker_base_container_stop_grace_time_seconds }} {{ devture_woodpecker_ci_agent_identifier }} 2>/dev/null'
-ExecStartPre=-{{ devture_systemd_docker_base_host_command_sh }} -c '{{ devture_systemd_docker_base_host_command_docker }} rm {{ devture_woodpecker_ci_agent_identifier }} 2>/dev/null'
+ExecStartPre=-{{ devture_systemd_docker_base_host_command_sh }} -c '{{ devture_systemd_docker_base_host_command_docker }} stop --time={{ devture_systemd_docker_base_container_stop_grace_time_seconds }} {{ woodpecker_ci_agent_identifier }} 2>/dev/null'
+ExecStartPre=-{{ devture_systemd_docker_base_host_command_sh }} -c '{{ devture_systemd_docker_base_host_command_docker }} rm {{ woodpecker_ci_agent_identifier }} 2>/dev/null'
 
 ExecStartPre={{ devture_systemd_docker_base_host_command_docker }} create \
 			--rm \
-			--name={{ devture_woodpecker_ci_agent_identifier }} \
+			--name={{ woodpecker_ci_agent_identifier }} \
 			--log-driver=none \
 			--cap-drop=ALL \
 			--read-only \
-			--network={{ devture_woodpecker_ci_agent_container_network }} \
-			--env-file={{ devture_woodpecker_ci_agent_base_path }}/env \
-			--mount type=bind,src={{ devture_woodpecker_ci_agent_docker_socket_path }},dst=/var/run/docker.sock \
+			--network={{ woodpecker_ci_agent_container_network }} \
+			--env-file={{ woodpecker_ci_agent_base_path }}/env \
+			--mount type=bind,src={{ woodpecker_ci_agent_docker_socket_path }},dst=/var/run/docker.sock \
 			--tmpfs=/tmp:rw,noexec,nosuid,size=128m \
-			{{ devture_woodpecker_ci_agent_container_image }}
+			{{ woodpecker_ci_agent_container_image }}
 
-{% for network in devture_woodpecker_ci_agent_container_additional_networks %}
-ExecStartPre={{ devture_systemd_docker_base_host_command_docker }} network connect {{ network }} {{ devture_woodpecker_ci_agent_identifier }}
+{% for network in woodpecker_ci_agent_container_additional_networks %}
+ExecStartPre={{ devture_systemd_docker_base_host_command_docker }} network connect {{ network }} {{ woodpecker_ci_agent_identifier }}
 {% endfor %}
 
-ExecStart={{ devture_systemd_docker_base_host_command_docker }} start --attach {{ devture_woodpecker_ci_agent_identifier }}
+ExecStart={{ devture_systemd_docker_base_host_command_docker }} start --attach {{ woodpecker_ci_agent_identifier }}
 
-ExecStop=-{{ devture_systemd_docker_base_host_command_sh }} -c '{{ devture_systemd_docker_base_host_command_docker }} stop --time={{ devture_systemd_docker_base_container_stop_grace_time_seconds }} {{ devture_woodpecker_ci_agent_identifier }} 2>/dev/null'
-ExecStop=-{{ devture_systemd_docker_base_host_command_sh }} -c '{{ devture_systemd_docker_base_host_command_docker }} rm {{ devture_woodpecker_ci_agent_identifier }} 2>/dev/null'
+ExecStop=-{{ devture_systemd_docker_base_host_command_sh }} -c '{{ devture_systemd_docker_base_host_command_docker }} stop --time={{ devture_systemd_docker_base_container_stop_grace_time_seconds }} {{ woodpecker_ci_agent_identifier }} 2>/dev/null'
+ExecStop=-{{ devture_systemd_docker_base_host_command_sh }} -c '{{ devture_systemd_docker_base_host_command_docker }} rm {{ woodpecker_ci_agent_identifier }} 2>/dev/null'
 Restart=always
 RestartSec=30
-SyslogIdentifier={{ devture_woodpecker_ci_agent_identifier }}
+SyslogIdentifier={{ woodpecker_ci_agent_identifier }}
 
 [Install]
 WantedBy=multi-user.target
