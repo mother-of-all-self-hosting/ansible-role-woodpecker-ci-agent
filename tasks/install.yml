@@ -29,6 +29,7 @@
 
 - name: Ensure Woodpecker CI agent container network is created
   community.general.docker_network:
+    enable_ipv6: "{{ devture_systemd_docker_base_ipv6_enabled }}"
     name: "{{ woodpecker_ci_agent_container_network }}"
     driver: bridge
     driver_options: "{{ devture_systemd_docker_base_container_networks_driver_options }}"
