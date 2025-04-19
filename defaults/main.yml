@@ -4,7 +4,7 @@
 woodpecker_ci_agent_enabled: true
 
 # renovate: datasource=docker depName=woodpeckerci/woodpecker-agent
-woodpecker_ci_agent_version: v3.1.0
+woodpecker_ci_agent_version: v3.5.2
 
 woodpecker_ci_agent_identifier: woodpecker-ci-agent
 
