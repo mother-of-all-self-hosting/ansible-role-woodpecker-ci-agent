@@ -11,10 +11,11 @@
 
 woodpecker_ci_agent_enabled: true
 
+woodpecker_ci_agent_identifier: woodpecker-ci-agent
+woodpecker_ci_agent_base_path: "/{{ woodpecker_ci_agent_identifier }}"
+
 # renovate: datasource=docker depName=woodpeckerci/woodpecker-agent
 woodpecker_ci_agent_version: v3.5.2
-
-woodpecker_ci_agent_identifier: woodpecker-ci-agent
 
 woodpecker_ci_agent_uid: ''
 woodpecker_ci_agent_gid: ''
@@ -26,7 +27,21 @@ woodpecker_ci_agent_container_image_registry_prefix_upstream: "{{ woodpecker_ci_
 woodpecker_ci_agent_container_image_registry_prefix_upstream_default: docker.io/
 woodpecker_ci_agent_container_image_force_pull: "{{ woodpecker_ci_agent_container_image.endswith(':latest') }}"
 
-woodpecker_ci_agent_base_path: "/{{ woodpecker_ci_agent_identifier }}"
+woodpecker_ci_agent_container_network: "{{ woodpecker_ci_agent_identifier }}"
+
+# A list of additional container networks that the container would be connected to.
+# The playbook does not create these networks, so make sure they already exist.
+woodpecker_ci_agent_container_additional_networks: "{{ woodpecker_ci_agent_container_additional_networks_auto + woodpecker_ci_agent_container_additional_networks_custom }}"
+woodpecker_ci_agent_container_additional_networks_auto: []
+woodpecker_ci_agent_container_additional_networks_custom: []
+
+woodpecker_ci_agent_systemd_required_systemd_services_list: "{{ woodpecker_ci_agent_systemd_required_systemd_services_list_default + woodpecker_ci_agent_systemd_required_systemd_services_list_auto + woodpecker_ci_agent_systemd_required_systemd_services_list_custom }}"
+woodpecker_ci_agent_systemd_required_systemd_services_list_default: "{{ [devture_systemd_docker_base_docker_service_name] if devture_systemd_docker_base_docker_service_name else [] }}"
+woodpecker_ci_agent_systemd_required_systemd_services_list_auto: []
+woodpecker_ci_agent_systemd_required_systemd_services_list_custom: []
+
+# List of systemd services that the Woodpecker CI Agent systemd service wants
+woodpecker_ci_agent_systemd_wanted_services_list: []
 
 woodpecker_ci_agent_docker_socket_path: /var/run/docker.sock
 
@@ -48,14 +63,6 @@ woodpecker_ci_agent_config_grpc_verify: false
 # A shared secret used by server and agents to authenticate communication.
 woodpecker_ci_agent_config_agent_secret: ''
 
-woodpecker_ci_agent_systemd_required_systemd_services_list: "{{ woodpecker_ci_agent_systemd_required_systemd_services_list_default + woodpecker_ci_agent_systemd_required_systemd_services_list_auto + woodpecker_ci_agent_systemd_required_systemd_services_list_custom }}"
-woodpecker_ci_agent_systemd_required_systemd_services_list_default: "{{ [devture_systemd_docker_base_docker_service_name] if devture_systemd_docker_base_docker_service_name else [] }}"
-woodpecker_ci_agent_systemd_required_systemd_services_list_auto: []
-woodpecker_ci_agent_systemd_required_systemd_services_list_custom: []
-
-# List of systemd services that the Woodpecker CI Agent systemd service wants
-woodpecker_ci_agent_systemd_wanted_services_list: []
-
 # woodpecker_ci_agent_config_log_level configures the logging level.
 # Valid values: 'trace', 'debug', 'info', 'warn', 'error', 'fatal', 'panic', 'disabled' and empty ('')
 #
@@ -69,11 +76,3 @@ woodpecker_ci_agent_config_log_level: info
 #   VAR=1
 #   ANOTHER=value
 woodpecker_ci_agent_container_additional_environment_variables: ''
-
-woodpecker_ci_agent_container_network: "{{ woodpecker_ci_agent_identifier }}"
-
-# A list of additional container networks that the container would be connected to.
-# The playbook does not create these networks, so make sure they already exist.
-woodpecker_ci_agent_container_additional_networks: "{{ woodpecker_ci_agent_container_additional_networks_auto + woodpecker_ci_agent_container_additional_networks_custom }}"
-woodpecker_ci_agent_container_additional_networks_auto: []
-woodpecker_ci_agent_container_additional_networks_custom: []
