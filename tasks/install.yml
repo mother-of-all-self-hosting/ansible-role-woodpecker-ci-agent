@@ -4,7 +4,7 @@
 
 ---
 
-- name: Ensure Woodpecker CI agent paths exist
+- name: Ensure Woodpecker CI agent path exists
   ansible.builtin.file:
     path: "{{ item }}"
     state: directory
@@ -14,7 +14,7 @@
   with_items:
     - "{{ woodpecker_ci_agent_base_path }}"
 
-- name: Ensure Woodpecker CI agent support files created
+- name: Ensure Woodpecker CI agent support files installed
   ansible.builtin.template:
     src: "{{ role_path }}/templates/{{ item }}.j2"
     dest: "{{ woodpecker_ci_agent_base_path }}/{{ item }}"
@@ -38,7 +38,7 @@
     driver: bridge
     driver_options: "{{ devture_systemd_docker_base_container_networks_driver_options }}"
 
-- name: Ensure Woodpecker CI agent systemd service installed
+- name: Ensure Woodpecker CI agent systemd service is present
   ansible.builtin.template:
     src: "{{ role_path }}/templates/systemd/woodpecker-ci-agent.service.j2"
     dest: "{{ devture_systemd_docker_base_systemd_path }}/{{ woodpecker_ci_agent_identifier }}.service"
