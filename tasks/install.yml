@@ -46,4 +46,4 @@
   ansible.builtin.template:
     src: "{{ role_path }}/templates/systemd/woodpecker-ci-agent.service.j2"
     dest: "{{ devture_systemd_docker_base_systemd_path }}/{{ woodpecker_ci_agent_identifier }}.service"
-    mode: 0640
+    mode: 0644
