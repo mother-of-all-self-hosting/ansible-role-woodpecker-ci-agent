@@ -3,13 +3,13 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
 ---
-
 - name: Check existence of Woodpecker CI agent systemd service
   ansible.builtin.stat:
     path: "{{ devture_systemd_docker_base_systemd_path }}/{{ woodpecker_ci_agent_identifier }}.service"
   register: woodpecker_ci_agent_service_stat
 
-- when: woodpecker_ci_agent_service_stat.stat.exists | bool
+- name: Uninstall Woodpecker CI agent systemd services and files
+  when: woodpecker_ci_agent_service_stat.stat.exists | bool
   block:
     - name: Ensure Woodpecker CI agent systemd service is stopped
       ansible.builtin.service:

@@ -3,12 +3,11 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
 ---
-
 - name: Ensure Woodpecker CI agent path exists
   ansible.builtin.file:
     path: "{{ item }}"
     state: directory
-    mode: 0750
+    mode: "0750"
     owner: "{{ woodpecker_ci_agent_uid }}"
     group: "{{ woodpecker_ci_agent_gid }}"
   with_items:
@@ -20,7 +19,7 @@
     dest: "{{ woodpecker_ci_agent_base_path }}/{{ item }}"
     owner: "{{ woodpecker_ci_agent_uid }}"
     group: "{{ woodpecker_ci_agent_gid }}"
-    mode: 0640
+    mode: "0640"
   with_items:
     - env
 
@@ -46,4 +45,4 @@
   ansible.builtin.template:
     src: "{{ role_path }}/templates/systemd/woodpecker-ci-agent.service.j2"
     dest: "{{ devture_systemd_docker_base_systemd_path }}/{{ woodpecker_ci_agent_identifier }}.service"
-    mode: 0644
+    mode: "0644"
