@@ -4,6 +4,7 @@
 
 ---
 - name: Perform Woodpecker CI Agent installation tasks
+  when: woodpecker_ci_agent_enabled | bool
   tags:
     - setup-all
     - setup-woodpecker-ci-agent
@@ -11,17 +12,15 @@
     - install-woodpecker-ci-agent
   block:
     - name: Validate Woodpecker CI Agent configuration
-      when: woodpecker_ci_agent_enabled | bool
       ansible.builtin.include_tasks: "{{ role_path }}/tasks/validate_config.yml"
     - name: Install Woodpecker CI Agent
-      when: woodpecker_ci_agent_enabled | bool
       ansible.builtin.include_tasks: "{{ role_path }}/tasks/install.yml"
 
 - name: Perform Woodpecker CI Agent uninstallation tasks
+  when: not woodpecker_ci_agent_enabled | bool
   tags:
     - setup-all
     - setup-woodpecker-ci-agent
   block:
     - name: Uninstall Woodpecker CI Agent
-      when: not woodpecker_ci_agent_enabled | bool
       ansible.builtin.include_tasks: "{{ role_path }}/tasks/uninstall.yml"
