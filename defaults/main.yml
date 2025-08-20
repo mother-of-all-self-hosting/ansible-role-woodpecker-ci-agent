@@ -15,7 +15,7 @@ woodpecker_ci_agent_identifier: woodpecker-ci-agent
 woodpecker_ci_agent_base_path: "/{{ woodpecker_ci_agent_identifier }}"
 
 # renovate: datasource=docker depName=woodpeckerci/woodpecker-agent
-woodpecker_ci_agent_version: v3.8.0
+woodpecker_ci_agent_version: v3.9.0
 
 woodpecker_ci_agent_uid: ''
 woodpecker_ci_agent_gid: ''
