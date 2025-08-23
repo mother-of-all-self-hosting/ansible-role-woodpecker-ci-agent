@@ -43,7 +43,10 @@ woodpecker_ci_agent_systemd_required_services_list_auto: []
 woodpecker_ci_agent_systemd_required_services_list_custom: []
 
 # List of systemd services that the Woodpecker CI Agent systemd service wants
-woodpecker_ci_agent_systemd_wanted_services_list: []
+woodpecker_ci_agent_systemd_wanted_services_list: "{{ woodpecker_ci_agent_systemd_wanted_services_list_default + woodpecker_ci_agent_systemd_wanted_services_list_auto + woodpecker_ci_agent_systemd_wanted_services_list_custom }}"
+woodpecker_ci_agent_systemd_wanted_services_list_default: []
+woodpecker_ci_agent_systemd_wanted_services_list_auto: []
+woodpecker_ci_agent_systemd_wanted_services_list_custom: []
 
 woodpecker_ci_agent_docker_socket_path: /var/run/docker.sock
 
