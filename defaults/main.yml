@@ -17,8 +17,8 @@ woodpecker_ci_agent_base_path: "/{{ woodpecker_ci_agent_identifier }}"
 # renovate: datasource=docker depName=woodpeckerci/woodpecker-agent
 woodpecker_ci_agent_version: v3.11.0
 
-woodpecker_ci_agent_uid: ''
-woodpecker_ci_agent_gid: ''
+woodpecker_ci_agent_uid: ""
+woodpecker_ci_agent_gid: ""
 
 woodpecker_ci_agent_container_image: "{{ woodpecker_ci_agent_container_image_registry_prefix }}woodpeckerci/woodpecker-agent:{{ woodpecker_ci_agent_container_image_tag }}"
 woodpecker_ci_agent_container_image_tag: "{{ woodpecker_ci_agent_version }}"
@@ -53,7 +53,7 @@ woodpecker_ci_agent_docker_socket_path: /var/run/docker.sock
 # woodpecker_ci_agent_config_server controls WOODPECKER_SERVER - `host:port` of the Woodpecker CI server's gRPC port
 # Note: this is NOT the HTTP port.
 # Example: `woodpecker-server:9000`
-woodpecker_ci_agent_config_server: ''
+woodpecker_ci_agent_config_server: ""
 
 # woodpecker_ci_agent_config_grpc_secure controls whether
 # Woodpecker Agent should connect to the server (over gRPC) using a
@@ -66,7 +66,7 @@ woodpecker_ci_agent_config_grpc_verify: false
 
 # woodpecker_ci_agent_config_agent_secret controls WOODPECKER_AGENT_SECRET -
 # A shared secret used by server and agents to authenticate communication.
-woodpecker_ci_agent_config_agent_secret: ''
+woodpecker_ci_agent_config_agent_secret: ""
 
 # woodpecker_ci_agent_config_log_level configures the logging level.
 # Valid values: 'trace', 'debug', 'info', 'warn', 'error', 'fatal', 'panic', 'disabled' and empty ('')
@@ -80,4 +80,4 @@ woodpecker_ci_agent_config_log_level: info
 # woodpecker_ci_agent_environment_variables_additional_variables: |
 #   VAR=1
 #   ANOTHER=value
-woodpecker_ci_agent_environment_variables_additional_variables: ''
+woodpecker_ci_agent_environment_variables_additional_variables: ""
