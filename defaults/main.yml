@@ -48,6 +48,9 @@ woodpecker_ci_agent_systemd_wanted_services_list_default: []
 woodpecker_ci_agent_systemd_wanted_services_list_auto: []
 woodpecker_ci_agent_systemd_wanted_services_list_custom: []
 
+# Specify the timezone
+woodpecker_ci_agent_environment_variables_tz: UTC
+
 woodpecker_ci_agent_docker_socket_path: /var/run/docker.sock
 
 # woodpecker_ci_agent_config_server controls WOODPECKER_SERVER - `host:port` of the Woodpecker CI server's gRPC port
