@@ -33,6 +33,9 @@ ExecStartPre={{ devture_systemd_docker_base_host_command_docker }} create \
       --env-file={{ woodpecker_ci_agent_base_path }}/env \
       --mount type=bind,src={{ woodpecker_ci_agent_docker_socket_path }},dst=/var/run/docker.sock \
       --tmpfs=/tmp:rw,noexec,nosuid,size=128m \
+      {% for arg in woodpecker_ci_agent_container_extra_arguments %}
+      {{ arg }} \
+      {% endfor %}
       {{ woodpecker_ci_agent_container_image }}
 
 {% for network in woodpecker_ci_agent_container_additional_networks %}
