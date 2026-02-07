@@ -31,7 +31,8 @@ woodpecker_ci_agent_container_image_force_pull: "{{ woodpecker_ci_agent_containe
 woodpecker_ci_agent_container_network: "{{ woodpecker_ci_agent_identifier }}"
 
 # A list of additional container networks that the container would be connected to.
-# The playbook does not create these networks, so make sure they already exist.
+# The role does not create these networks, so make sure they already exist.
+# Use this to expose this container to another reverse proxy, which runs in a different container network.
 woodpecker_ci_agent_container_additional_networks: "{{ woodpecker_ci_agent_container_additional_networks_auto + woodpecker_ci_agent_container_additional_networks_custom }}"
 woodpecker_ci_agent_container_additional_networks_auto: []
 woodpecker_ci_agent_container_additional_networks_custom: []
