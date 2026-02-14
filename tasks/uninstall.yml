@@ -29,6 +29,7 @@
       community.docker.docker_network:
         name: "{{ woodpecker_ci_agent_container_network }}"
         state: absent
+      register: woodpecker_ci_agent_network_deletion_result
 
     - name: Ensure Woodpecker CI agent container network does not exist via ansible.builtin.command
       when: devture_systemd_docker_base_container_network_creation_method == 'command'
@@ -36,8 +37,8 @@
         cmd: >-
           {{ devture_systemd_docker_base_host_command_docker }} network rm
           {{ woodpecker_ci_agent_container_network }}
-      register: network_deletion_result
-      changed_when: woodpecker_ci_agent_container_network in network_deletion_result.stdout
+      register: woodpecker_ci_agent_network_deletion_result
+      changed_when: woodpecker_ci_agent_container_network in woodpecker_ci_agent_network_deletion_result.stdout
 
     - name: Ensure Woodpecker CI agent path does not exist
       ansible.builtin.file:
