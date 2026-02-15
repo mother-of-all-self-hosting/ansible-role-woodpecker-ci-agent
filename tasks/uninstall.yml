@@ -24,21 +24,24 @@
         path: "{{ devture_systemd_docker_base_systemd_path }}/{{ woodpecker_ci_agent_identifier }}.service"
         state: absent
 
-    - name: Ensure Woodpecker CI agent container network does not exist via community.docker.docker_network
-      when: devture_systemd_docker_base_container_network_creation_method == 'ansible-module'
-      community.docker.docker_network:
-        name: "{{ woodpecker_ci_agent_container_network }}"
-        state: absent
-      register: woodpecker_ci_agent_network_deletion_result
+    - name: Ensure Woodpecker CI agent container network does not exist
+      when: woodpecker_ci_agent_container_network_deletion_enabled
+      block:
+        - name: Ensure Woodpecker CI agent container network does not exist via community.docker.docker_network
+          when: devture_systemd_docker_base_container_network_creation_method == 'ansible-module'
+          community.docker.docker_network:
+            name: "{{ woodpecker_ci_agent_container_network }}"
+            state: absent
+          register: woodpecker_ci_agent_network_deletion_result
 
-    - name: Ensure Woodpecker CI agent container network does not exist via ansible.builtin.command
-      when: devture_systemd_docker_base_container_network_creation_method == 'command'
-      ansible.builtin.command:
-        cmd: >-
-          {{ devture_systemd_docker_base_host_command_docker }} network rm
-          {{ woodpecker_ci_agent_container_network }}
-      register: woodpecker_ci_agent_network_deletion_result
-      changed_when: woodpecker_ci_agent_container_network in woodpecker_ci_agent_network_deletion_result.stdout
+        - name: Ensure Woodpecker CI agent container network does not exist via ansible.builtin.command
+          when: devture_systemd_docker_base_container_network_creation_method == 'command'
+          ansible.builtin.command:
+            cmd: >-
+              {{ devture_systemd_docker_base_host_command_docker }} network rm
+              {{ woodpecker_ci_agent_container_network }}
+          register: woodpecker_ci_agent_network_deletion_result
+          changed_when: woodpecker_ci_agent_container_network in woodpecker_ci_agent_network_deletion_result.stdout
 
     - name: Ensure Woodpecker CI agent path does not exist
       ansible.builtin.file:
