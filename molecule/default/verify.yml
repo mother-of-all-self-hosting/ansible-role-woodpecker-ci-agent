@@ -1,0 +1,35 @@
+# SPDX-FileCopyrightText: 2026 Suguru Hirahara
+# SPDX-FileCopyrightText: 2026 spatterlight
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+---
+- name: Verify Woodpecker CI agent systemd service
+  hosts: all
+  become: true
+  gather_facts: false
+  tasks:
+    - name: Wait for Woodpecker CI agent service to become active (up to 180s)
+      ansible.builtin.systemd:
+        name: woodpecker-ci-agent.service
+      register: woodpecker_ci_agent_service
+      until: woodpecker_ci_agent_service.status.ActiveState == 'active'
+      retries: 36
+      delay: 5
+
+    - name: Assert Woodpecker CI agent service is active
+      ansible.builtin.assert:
+        that: woodpecker_ci_agent_service.status.ActiveState == 'active'
+        fail_msg: "woodpecker-ci-agent.service not active ({{ woodpecker_ci_agent_service.status.ActiveState }})"
+        success_msg: "woodpecker-ci-agent.service is active"
+
+    - name: Retrieve Woodpecker CI agent service log for debugging
+      when: woodpecker_ci_agent_debug_service_enabled | bool
+      ansible.builtin.command:
+        cmd: journalctl -xeu woodpecker-ci-agent.service
+      changed_when: false
+
+    - name: Show Woodpecker CI agent systemd service status summary
+      ansible.builtin.debug:
+        msg:
+          - "Woodpecker CI agent systemd: {{ woodpecker_ci_agent_service.status.ActiveState }}"
