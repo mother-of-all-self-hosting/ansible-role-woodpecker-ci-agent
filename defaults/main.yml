@@ -14,7 +14,7 @@ woodpecker_ci_agent_enabled: true
 woodpecker_ci_agent_identifier: woodpecker-ci-agent
 woodpecker_ci_agent_base_path: "/{{ woodpecker_ci_agent_identifier }}"
 
-# renovate: datasource=docker depName=woodpeckerci/woodpecker-agent
+# renovate: datasource=docker depName=woodpeckerci/woodpecker-agent versioning=semver
 woodpecker_ci_agent_version: v3.17.0
 
 woodpecker_ci_agent_uid: ""
