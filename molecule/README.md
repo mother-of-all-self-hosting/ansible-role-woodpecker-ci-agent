@@ -49,6 +49,8 @@ Currently there is one testing scenario available.
 
 Tests a standard Woodpecker CI agent installation.
 
+An agent on its own is not a service — it dials a Woodpecker CI server over gRPC and gives up when it cannot reach one, which under `Restart=always` yields a systemd unit that merely keeps flapping back into `active`. The scenario therefore stands up a Woodpecker CI server of the same version as a helper container on the agent's own container network, lets the role's agent register with it using a shared secret, and then checks the server's own record of that agent: the name it reports, the secret it authenticated with, the workflow capacity it advertises, the backend it detected through the Docker socket this role mounts, and how recently the server last heard from it.
+
 ## Running
 
 By default it is configured to run the scenarios on Ubuntu 26.04.

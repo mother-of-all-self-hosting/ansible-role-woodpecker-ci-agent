@@ -1,5 +1,6 @@
 # SPDX-FileCopyrightText: 2026 Suguru Hirahara
 # SPDX-FileCopyrightText: 2026 spatterlight
+# SPDX-FileCopyrightText: 2026 Slavi Pantaleev
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
@@ -31,11 +32,79 @@ provisioner:
         # Helper variables
         woodpecker_ci_agent_debug_service_enabled: false
 
+        # An agent on its own is not a service - it is a process that dials a
+        # Woodpecker CI server over gRPC and gives up when it cannot reach one.
+        # Left without a server it retries five times (about ten seconds) and
+        # then exits non-zero, which under `Restart=always` yields a unit that
+        # keeps flapping back into `active`. `active` therefore proves nothing
+        # here, so the scenario runs a server for the agent to register with
+        # and then checks the server's own record of that agent.
+        #
+        # The server is deployed by prepare.yml as a plain helper container
+        # rather than through the sibling ansible-role-woodpecker-ci-server, so
+        # that this role's tests do not depend on that role's release cadence.
+        woodpecker_ci_agent_molecule_server_identifier: woodpecker-ci-agent-default-server
+
+        # The port the helper server's HTTP interface is published on inside
+        # the test container, so that prepare.yml can wait for it to answer.
+        # The gRPC port the agent talks to is deliberately not published - the
+        # agent reaches it by container name over the shared container network.
+        woodpecker_ci_agent_molecule_server_http_bind_port: 8000
+        woodpecker_ci_agent_molecule_server_grpc_port: 9000
+
+        # The helper server keeps its SQLite database here. The directory is
+        # bind-mounted out of the container so that verify.yml can read the
+        # server's record of its agents.
+        woodpecker_ci_agent_molecule_server_data_path: /woodpecker-ci-agent-molecule/server-data
+
+        # The shared secret that authenticates the gRPC session. The server is
+        # handed it directly, while the agent only ever sees it through the
+        # `env` file this role writes - so a session the server accepts is
+        # evidence that the file reached the agent process.
+        woodpecker_ci_agent_molecule_agent_secret: molecule-shared-agent-secret
+
+        # Deliberately not the agent container's own hostname, which is what an
+        # agent reports by default. Seeing this exact name come back from the
+        # server proves the value travelled from the role's `env` file, through
+        # the agent process, to the server.
+        woodpecker_ci_agent_molecule_agent_hostname: molecule-woodpecker-agent
+
+        # Not the agent's default (which follows the CPU count), so that the
+        # capacity the server records is unambiguously the configured one.
+        woodpecker_ci_agent_molecule_max_workflows: 3
+
+        # The port the agent's own healthcheck endpoint is published on inside
+        # the test container. The role does not publish it, so the scenario
+        # does, through `woodpecker_ci_agent_container_extra_arguments_custom`.
+        woodpecker_ci_agent_molecule_healthcheck_bind_port: 13000
+
         # Variables for Woodpecker CI agent
+        #
+        # A scenario-specific identifier, so that the container, the container
+        # network and the systemd unit all carry the role's name and the
+        # scenario's.
+        woodpecker_ci_agent_identifier: woodpecker-ci-agent-default
+
         woodpecker_ci_agent_uid: 1000
         woodpecker_ci_agent_gid: 1000
-        woodpecker_ci_agent_config_server: https://example.com
-        woodpecker_ci_agent_config_agent_secret: secret
+
+        # `host:port` of the helper server's gRPC port, reached by container
+        # name over the container network this role creates.
+        woodpecker_ci_agent_config_server: >-
+          {{ woodpecker_ci_agent_molecule_server_identifier }}:{{ woodpecker_ci_agent_molecule_server_grpc_port }}
+
+        woodpecker_ci_agent_config_agent_secret: "{{ woodpecker_ci_agent_molecule_agent_secret }}"
+
+        # Raised above the role's default, so that the agent's log carries
+        # debug-level lines that only a process which read this setting emits.
+        woodpecker_ci_agent_config_log_level: debug
+
+        woodpecker_ci_agent_environment_variables_additional_variables: |
+          WOODPECKER_HOSTNAME={{ woodpecker_ci_agent_molecule_agent_hostname }}
+          WOODPECKER_MAX_WORKFLOWS={{ woodpecker_ci_agent_molecule_max_workflows }}
+
+        woodpecker_ci_agent_container_extra_arguments_custom:
+          - "-p 127.0.0.1:{{ woodpecker_ci_agent_molecule_healthcheck_bind_port }}:3000"
   env:
     # Workaround for https://github.com/ansible/molecule/issues/4391
     ANSIBLE_ROLES_PATH: ${MOLECULE_PROJECT_DIRECTORY}/..:/.ansible/roles:/usr/share/ansible/roles:/etc/ansible/roles:~/.ansible/roles

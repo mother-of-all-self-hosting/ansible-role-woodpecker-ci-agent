@@ -1,5 +1,6 @@
 # SPDX-FileCopyrightText: 2026 Suguru Hirahara
 # SPDX-FileCopyrightText: 2026 spatterlight
+# SPDX-FileCopyrightText: 2026 Slavi Pantaleev
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
@@ -27,3 +28,112 @@
       vars:
         docker_daemon_options:
           storage-driver: vfs
+
+# A Woodpecker CI agent is only meaningful against a Woodpecker CI server: it
+# dials the server over gRPC on startup and gives up when it cannot reach one.
+#
+# The server is deployed here rather than in converge.yml so that converge
+# stays focused on the role under test, and so that the server - along with the
+# agent registration it comes to hold - survives the second converge run that
+# Molecule's idempotence check performs.
+- name: Deploy a Woodpecker CI server for the Woodpecker CI agent to register with
+  hosts: all
+  become: true
+  gather_facts: false
+  vars:
+    # The role derives `woodpecker_ci_agent_container_network` from the
+    # identifier, and the role's defaults are not in scope in this play.
+    woodpecker_ci_agent_molecule_container_network: "{{ woodpecker_ci_agent_identifier }}"
+  tasks:
+    # The server and the agent are released in lockstep from the same upstream
+    # repository and publish identical version tags, so the helper server is
+    # pinned to the very version this role installs. That keeps the two in step
+    # by construction: the Renovate bump of the leaf variable below moves both.
+    #
+    # Only literal values can be read this way - defaults that are defined in
+    # terms of other variables do not resolve outside the role.
+    - name: Load the Woodpecker CI agent role defaults
+      ansible.builtin.include_vars:
+        file: "{{ lookup('env', 'MOLECULE_PROJECT_DIRECTORY') }}/defaults/main.yml"
+        name: woodpecker_ci_agent_defaults
+
+    - name: Ensure the helper Woodpecker CI server data path exists
+      ansible.builtin.file:
+        path: "{{ woodpecker_ci_agent_molecule_server_data_path }}"
+        state: directory
+        # The server runs as an unprivileged user of its own inside the
+        # container and has to be able to create its database in this
+        # bind-mounted directory.
+        mode: "0777"
+
+    # The role creates this network itself, but the helper server has to be on
+    # it before the role ever runs, because the agent resolves the server by
+    # container name.
+    - name: Ensure the Woodpecker CI agent container network exists
+      ansible.builtin.command:
+        cmd: "docker network create {{ woodpecker_ci_agent_molecule_container_network }}"
+      register: woodpecker_ci_agent_molecule_network_creation
+      changed_when: woodpecker_ci_agent_molecule_network_creation.rc == 0
+      failed_when: >-
+        woodpecker_ci_agent_molecule_network_creation.rc != 0
+        and 'already exists' not in woodpecker_ci_agent_molecule_network_creation.stderr
+
+    - name: Ensure the helper Woodpecker CI server container image is pulled
+      ansible.builtin.command:
+        cmd: "docker pull docker.io/woodpeckerci/woodpecker-server:{{ woodpecker_ci_agent_defaults.woodpecker_ci_agent_version }}"
+      register: woodpecker_ci_agent_molecule_server_image_pull
+      changed_when: "'Downloaded newer image' in woodpecker_ci_agent_molecule_server_image_pull.stdout"
+      retries: 5
+      delay: 10
+      until: woodpecker_ci_agent_molecule_server_image_pull is not failed
+
+    - name: Check whether the helper Woodpecker CI server container exists already
+      ansible.builtin.command:
+        cmd: "docker container inspect {{ woodpecker_ci_agent_molecule_server_identifier }}"
+      register: woodpecker_ci_agent_molecule_server_inspect
+      changed_when: false
+      failed_when: false
+
+    # A Woodpecker CI server refuses to start without a forge configured
+    # ("could not setup service manager: forge not configured"), but it never
+    # contacts that forge in order to accept an agent: agents authenticate with
+    # the shared secret over gRPC, entirely outside the forge's OAuth flow. A
+    # declared-but-unusable forge is therefore enough, and spares this scenario
+    # a second helper service it would learn nothing from.
+    - name: Ensure the helper Woodpecker CI server container is running
+      when: woodpecker_ci_agent_molecule_server_inspect.rc != 0
+      ansible.builtin.command:
+        cmd: >-
+          docker run -d
+          --name {{ woodpecker_ci_agent_molecule_server_identifier }}
+          --network {{ woodpecker_ci_agent_molecule_container_network }}
+          -p 127.0.0.1:{{ woodpecker_ci_agent_molecule_server_http_bind_port }}:8000
+          --mount type=bind,src={{ woodpecker_ci_agent_molecule_server_data_path }},dst=/var/lib/woodpecker
+          --env WOODPECKER_AGENT_SECRET={{ woodpecker_ci_agent_molecule_agent_secret }}
+          --env WOODPECKER_HOST=http://{{ woodpecker_ci_agent_molecule_server_identifier }}:8000
+          --env WOODPECKER_GITHUB=true
+          --env WOODPECKER_GITHUB_CLIENT=molecule-unusable-client
+          --env WOODPECKER_GITHUB_SECRET=molecule-unusable-secret
+          docker.io/woodpeckerci/woodpecker-server:{{ woodpecker_ci_agent_defaults.woodpecker_ci_agent_version }}
+      changed_when: true
+
+    # The server answers this endpoint only once its HTTP server is up, which
+    # is also when its gRPC server is accepting agents.
+    - name: Wait for the helper Woodpecker CI server to become healthy (up to 180s)
+      ansible.builtin.uri:
+        url: "http://127.0.0.1:{{ woodpecker_ci_agent_molecule_server_http_bind_port }}/healthz"
+        method: GET
+        status_code: [204]
+      register: woodpecker_ci_agent_molecule_server_health
+      failed_when: false
+      until: woodpecker_ci_agent_molecule_server_health.status | default(-1) == 204
+      retries: 36
+      delay: 5
+
+    - name: Assert the helper Woodpecker CI server is healthy
+      ansible.builtin.assert:
+        that: woodpecker_ci_agent_molecule_server_health.status == 204
+        fail_msg: >-
+          The helper Woodpecker CI server did not become healthy
+          ({{ woodpecker_ci_agent_molecule_server_health.status }})
+        success_msg: "The helper Woodpecker CI server is healthy"

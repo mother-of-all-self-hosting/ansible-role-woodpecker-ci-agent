@@ -1,35 +1,259 @@
 # SPDX-FileCopyrightText: 2026 Suguru Hirahara
 # SPDX-FileCopyrightText: 2026 spatterlight
+# SPDX-FileCopyrightText: 2026 Slavi Pantaleev
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
 ---
-- name: Verify Woodpecker CI agent systemd service
+- name: Verify Woodpecker CI agent
   hosts: all
   become: true
   gather_facts: false
+  vars:
+    woodpecker_ci_agent_molecule_server_database_path: >-
+      {{ woodpecker_ci_agent_molecule_server_data_path }}/woodpecker.sqlite
   tasks:
+    # Role defaults are not in scope in a verifier playbook, but the version
+    # that Renovate bumps lives in them and the running agent is checked
+    # against it below. Only literal values resolve this way.
+    - name: Load the Woodpecker CI agent role defaults
+      ansible.builtin.include_vars:
+        file: "{{ lookup('env', 'MOLECULE_PROJECT_DIRECTORY') }}/defaults/main.yml"
+        name: woodpecker_ci_agent_defaults
+
     - name: Wait for Woodpecker CI agent service to become active (up to 180s)
       ansible.builtin.systemd:
-        name: woodpecker-ci-agent.service
+        name: "{{ woodpecker_ci_agent_identifier }}.service"
       register: woodpecker_ci_agent_service
       until: woodpecker_ci_agent_service.status.ActiveState == 'active'
       retries: 36
       delay: 5
 
+    # This is the weakest rung of the ladder and it is here only to fail early
+    # with a clear message. An agent that cannot reach a server exits after
+    # about ten seconds, and `Restart=always` puts the unit straight back into
+    # `active`, so a flapping unit passes this check just as a working one
+    # does. Everything below distinguishes the two.
     - name: Assert Woodpecker CI agent service is active
       ansible.builtin.assert:
         that: woodpecker_ci_agent_service.status.ActiveState == 'active'
-        fail_msg: "woodpecker-ci-agent.service not active ({{ woodpecker_ci_agent_service.status.ActiveState }})"
-        success_msg: "woodpecker-ci-agent.service is active"
+        fail_msg: "{{ woodpecker_ci_agent_identifier }}.service not active ({{ woodpecker_ci_agent_service.status.ActiveState }})"
+        success_msg: "{{ woodpecker_ci_agent_identifier }}.service is active"
 
     - name: Retrieve Woodpecker CI agent service log for debugging
       when: woodpecker_ci_agent_debug_service_enabled | bool
       ansible.builtin.command:
-        cmd: journalctl -xeu woodpecker-ci-agent.service
+        cmd: "journalctl -xeu {{ woodpecker_ci_agent_identifier }}.service"
       changed_when: false
 
-    - name: Show Woodpecker CI agent systemd service status summary
+    - name: Inspect the Woodpecker CI agent container
+      ansible.builtin.command:
+        cmd: "docker inspect {{ woodpecker_ci_agent_identifier }}"
+      register: woodpecker_ci_agent_container_inspect
+      changed_when: false
+
+    - name: Set the Woodpecker CI agent container facts
+      ansible.builtin.set_fact:
+        woodpecker_ci_agent_container: "{{ woodpecker_ci_agent_container_inspect.stdout | from_json | first }}"
+
+    - name: Assert the Woodpecker CI agent container is running
+      ansible.builtin.assert:
+        that: woodpecker_ci_agent_container.State.Running
+        fail_msg: "The Woodpecker CI agent container is not running: {{ woodpecker_ci_agent_container.State }}"
+        success_msg: "The Woodpecker CI agent container is running"
+
+    # The image reference the role computed from its leaf version variable is
+    # what the container was actually created from.
+    - name: Assert the Woodpecker CI agent container runs the image this role installs
+      ansible.builtin.assert:
+        that: >-
+          woodpecker_ci_agent_container.Config.Image
+          ==
+          'docker.io/woodpeckerci/woodpecker-agent:' + woodpecker_ci_agent_defaults.woodpecker_ci_agent_version
+        fail_msg: >-
+          The container runs '{{ woodpecker_ci_agent_container.Config.Image }}', expected
+          docker.io/woodpeckerci/woodpecker-agent:{{ woodpecker_ci_agent_defaults.woodpecker_ci_agent_version }}
+        success_msg: "The container runs {{ woodpecker_ci_agent_container.Config.Image }}"
+
+    # Inspected by image ID rather than by reference, so that this describes the
+    # very image the running container was created from.
+    - name: Inspect the Woodpecker CI agent container image
+      ansible.builtin.command:
+        cmd: "docker image inspect {{ woodpecker_ci_agent_container.Image }}"
+      register: woodpecker_ci_agent_image_inspect
+      changed_when: false
+
+    - name: Set the Woodpecker CI agent container image facts
+      ansible.builtin.set_fact:
+        woodpecker_ci_agent_image: "{{ woodpecker_ci_agent_image_inspect.stdout | from_json | first }}"
+
+    # The tag the role asks for could point anywhere. The image's own OCI
+    # metadata is upstream's statement about which release it built.
+    - name: Assert the deployed image is the upstream release the leaf version names
+      ansible.builtin.assert:
+        that: >-
+          woodpecker_ci_agent_image.Config.Labels['org.opencontainers.image.version']
+          ==
+          woodpecker_ci_agent_defaults.woodpecker_ci_agent_version | regex_replace('^v', '')
+        fail_msg: >-
+          The image is labelled version
+          '{{ woodpecker_ci_agent_image.Config.Labels['org.opencontainers.image.version'] | default('none') }}',
+          expected {{ woodpecker_ci_agent_defaults.woodpecker_ci_agent_version | regex_replace('^v', '') }}
+        success_msg: >-
+          The image is upstream release
+          {{ woodpecker_ci_agent_image.Config.Labels['org.opencontainers.image.version'] }}
+
+    # The agent serves this on port 3000, which the scenario publishes through
+    # `woodpecker_ci_agent_container_extra_arguments_custom`. It answers only
+    # while the agent considers itself connected to its server.
+    - name: Wait for the Woodpecker CI agent healthcheck endpoint to answer (up to 180s)
+      ansible.builtin.uri:
+        url: "http://127.0.0.1:{{ woodpecker_ci_agent_molecule_healthcheck_bind_port }}/healthz"
+        method: GET
+        status_code: [200]
+      register: woodpecker_ci_agent_healthcheck
+      failed_when: false
+      until: woodpecker_ci_agent_healthcheck.status | default(-1) == 200
+      retries: 36
+      delay: 5
+
+    - name: Assert the Woodpecker CI agent reports itself healthy
+      ansible.builtin.assert:
+        that: woodpecker_ci_agent_healthcheck.status == 200
+        fail_msg: >-
+          The Woodpecker CI agent healthcheck endpoint answered
+          {{ woodpecker_ci_agent_healthcheck.status }}
+        success_msg: "The Woodpecker CI agent healthcheck endpoint answers 200"
+
+    # The question that matters for an agent: does the server know about it?
+    #
+    # The server's HTTP API guards /api/agents behind an administrator session,
+    # and administrators only come into being through the forge's OAuth flow -
+    # which this scenario deliberately does not stand a forge up for. The
+    # server's own database is therefore the honest surface: the `agents` table
+    # is exactly what that API would serve, written by the server itself as a
+    # result of the agent's gRPC registration.
+    #
+    # `last_contact` is refreshed on every poll the agent makes, so requiring it
+    # to be recent is what separates a live gRPC session from a stale row left
+    # behind by an agent that has since died.
+    - name: Query the Woodpecker CI server's record of its agents (up to 180s)
+      ansible.builtin.command:
+        argv:
+          - python3
+          - -c
+          - |
+            import json, sqlite3, sys, time
+            connection = sqlite3.connect('file:' + sys.argv[1] + '?mode=ro', uri=True)
+            connection.row_factory = sqlite3.Row
+            now = int(time.time())
+            agents = []
+            for row in connection.execute('SELECT * FROM agents'):
+                agent = dict(row)
+                agent['seconds_since_last_contact'] = now - int(agent['last_contact'])
+                agents.append(agent)
+            print(json.dumps(dict(agents=agents)))
+          - "{{ woodpecker_ci_agent_molecule_server_database_path }}"
+      register: woodpecker_ci_agent_server_agents
+      changed_when: false
+      failed_when: false
+      until: >-
+        woodpecker_ci_agent_server_agents.rc == 0
+        and (woodpecker_ci_agent_server_agents.stdout | from_json).agents
+        | selectattr('name', 'equalto', woodpecker_ci_agent_molecule_agent_hostname)
+        | selectattr('seconds_since_last_contact', 'lt', 120)
+        | list | length == 1
+      retries: 36
+      delay: 5
+
+    - name: Set the Woodpecker CI server's record of the agent
+      ansible.builtin.set_fact:
+        woodpecker_ci_agent_registration: >-
+          {{
+            (woodpecker_ci_agent_server_agents.stdout | from_json).agents
+            | selectattr('name', 'equalto', woodpecker_ci_agent_molecule_agent_hostname)
+            | list | first | default({})
+          }}
+
+    - name: Assert the Woodpecker CI server holds a live registration for this agent
+      ansible.builtin.assert:
+        that:
+          - woodpecker_ci_agent_registration.name | default('') == woodpecker_ci_agent_molecule_agent_hostname
+          - woodpecker_ci_agent_registration.seconds_since_last_contact | default(9999) < 120
+        fail_msg: >-
+          The server holds no live registration for '{{ woodpecker_ci_agent_molecule_agent_hostname }}':
+          {{ (woodpecker_ci_agent_server_agents.stdout | default('no output')) }}
+        success_msg: >-
+          The server last heard from agent '{{ woodpecker_ci_agent_registration.name }}'
+          {{ woodpecker_ci_agent_registration.seconds_since_last_contact }}s ago
+
+    # The secret is never handed to the agent by hand - it reaches the process
+    # only through the `env` file this role writes. The server storing it
+    # against this agent is proof that the file got there and was accepted.
+    - name: Assert the agent authenticated with the secret this role configured
+      ansible.builtin.assert:
+        that: woodpecker_ci_agent_registration.token == woodpecker_ci_agent_molecule_agent_secret
+        fail_msg: >-
+          The server recorded the agent under a different secret than the one this role wrote
+        success_msg: "The agent authenticated with the secret this role wrote to its env file"
+
+    # `WOODPECKER_MAX_WORKFLOWS` is set through the role's
+    # `..._environment_variables_additional_variables` and is reported to the
+    # server by the agent, so the number coming back here has travelled the
+    # whole way from the role's configuration into the running process.
+    - name: Assert the configured workflow capacity reached the running agent
+      ansible.builtin.assert:
+        that: woodpecker_ci_agent_registration.capacity == woodpecker_ci_agent_molecule_max_workflows
+        fail_msg: >-
+          The server reports a capacity of {{ woodpecker_ci_agent_registration.capacity }},
+          expected {{ woodpecker_ci_agent_molecule_max_workflows }}
+        success_msg: >-
+          The server reports the configured capacity of
+          {{ woodpecker_ci_agent_registration.capacity }} workflows
+
+    # The agent picks its backend by looking at what is available to it. It only
+    # settles on `docker` when it can talk to a Docker daemon, which it can only
+    # do because this role bind-mounts the host's Docker socket into it. Any
+    # other value means that mount did not work.
+    - name: Assert the agent detected the Docker backend through the socket this role mounts
+      ansible.builtin.assert:
+        that: woodpecker_ci_agent_registration.backend == 'docker'
+        fail_msg: >-
+          The agent selected the '{{ woodpecker_ci_agent_registration.backend }}' backend,
+          which means it could not reach the Docker socket this role mounts
+        success_msg: "The agent selected the Docker backend, so the mounted Docker socket works"
+
+    # Upstream's release images are built without the version stamped into the
+    # binary, so the agent self-reports a development string of the form
+    # `next-<first 10 characters of the commit it was built from>` rather than
+    # its release number - `woodpecker-agent --version` says the same. That
+    # commit is recorded in the image's OCI metadata, so the string the server
+    # received still pins the running process to this exact image. Should
+    # upstream ever start stamping the release in, the plain version is
+    # accepted too.
+    - name: Assert the agent the server sees is the build inside the deployed image
+      ansible.builtin.assert:
+        that: >-
+          woodpecker_ci_agent_registration.version
+          in
+          [
+            'next-' + woodpecker_ci_agent_image.Config.Labels['org.opencontainers.image.revision'][0:10],
+            woodpecker_ci_agent_defaults.woodpecker_ci_agent_version | regex_replace('^v', ''),
+            woodpecker_ci_agent_defaults.woodpecker_ci_agent_version,
+          ]
+        fail_msg: >-
+          The server reports agent version '{{ woodpecker_ci_agent_registration.version }}', which is
+          neither the deployed image's build
+          (next-{{ woodpecker_ci_agent_image.Config.Labels['org.opencontainers.image.revision'][0:10] }})
+          nor {{ woodpecker_ci_agent_defaults.woodpecker_ci_agent_version }}
+        success_msg: >-
+          The server sees agent version '{{ woodpecker_ci_agent_registration.version }}',
+          which is the build inside the deployed image
+
+    - name: Show Woodpecker CI agent verification summary
       ansible.builtin.debug:
         msg:
           - "Woodpecker CI agent systemd: {{ woodpecker_ci_agent_service.status.ActiveState }}"
+          - "Woodpecker CI agent image: {{ woodpecker_ci_agent_container.Config.Image }}"
+          - "Upstream release label: {{ woodpecker_ci_agent_image.Config.Labels['org.opencontainers.image.version'] }}"
+          - "Woodpecker CI server's view of the agent: {{ woodpecker_ci_agent_registration }}"
