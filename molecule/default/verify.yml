@@ -48,7 +48,7 @@
 
     - name: Inspect the Woodpecker CI agent container
       ansible.builtin.command:
-        cmd: "docker inspect {{ woodpecker_ci_agent_identifier }}"
+        cmd: "docker container inspect {{ woodpecker_ci_agent_identifier }}"
       register: woodpecker_ci_agent_container_inspect
       changed_when: false
 
