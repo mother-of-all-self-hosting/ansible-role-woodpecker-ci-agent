@@ -13,10 +13,10 @@
     woodpecker_ci_agent_molecule_server_database_path: >-
       {{ woodpecker_ci_agent_molecule_server_data_path }}/woodpecker.sqlite
   tasks:
-    # Role defaults are not in scope in a verifier playbook, but the version
-    # that Renovate bumps lives in them and the running agent is checked
-    # against it below. Only literal values resolve this way.
-    - name: Load the Woodpecker CI agent role defaults
+    # The role is not included in this playbook, so its defaults are not in
+    # scope. Reading defaults/main.yml directly ties the version assertion
+    # below.
+    - name: Load the role defaults
       ansible.builtin.include_vars:
         file: "{{ lookup('env', 'MOLECULE_PROJECT_DIRECTORY') }}/defaults/main.yml"
         name: woodpecker_ci_agent_defaults
