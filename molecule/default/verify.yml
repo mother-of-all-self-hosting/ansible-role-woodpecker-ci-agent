@@ -250,7 +250,7 @@
           The server sees agent version '{{ woodpecker_ci_agent_registration.version }}',
           which is the build inside the deployed image
 
-    - name: Show Woodpecker CI agent verification summary
+    - name: Show the Woodpecker CI agent verification summary
       ansible.builtin.debug:
         msg:
           - "Woodpecker CI agent systemd: {{ woodpecker_ci_agent_service.status.ActiveState }}"
