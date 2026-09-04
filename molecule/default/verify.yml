@@ -64,16 +64,14 @@
 
     # The image reference the role computed from its leaf version variable is
     # what the container was actually created from.
-    - name: Assert the Woodpecker CI agent container runs the image this role installs
+    - name: Assert the running Woodpecker CI agent is the version this role installs
       ansible.builtin.assert:
         that: >-
           woodpecker_ci_agent_container.Config.Image
           ==
           'docker.io/woodpeckerci/woodpecker-agent:' + woodpecker_ci_agent_defaults.woodpecker_ci_agent_version
-        fail_msg: >-
-          The container runs '{{ woodpecker_ci_agent_container.Config.Image }}', expected
-          docker.io/woodpeckerci/woodpecker-agent:{{ woodpecker_ci_agent_defaults.woodpecker_ci_agent_version }}
-        success_msg: "The container runs {{ woodpecker_ci_agent_container.Config.Image }}"
+        fail_msg: "Woodpecker CI agent reports {{ woodpecker_ci_agent_container.Config.Image | default('none') }}, expected docker.io/woodpeckerci/woodpecker-agent:{{ woodpecker_ci_agent_defaults.woodpecker_ci_agent_version }}"
+        success_msg: "Woodpecker CI agent reports {{ woodpecker_ci_agent_container.Config.Image }}"
 
     # Inspected by image ID rather than by reference, so that this describes the
     # very image the running container was created from.
