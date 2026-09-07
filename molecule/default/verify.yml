@@ -49,12 +49,12 @@
     - name: Inspect the Woodpecker CI agent container
       ansible.builtin.command:
         cmd: "docker container inspect {{ woodpecker_ci_agent_identifier }}"
-      register: woodpecker_ci_agent_container_inspect
+      register: woodpecker_ci_agent_container_raw
       changed_when: false
 
     - name: Set the Woodpecker CI agent container facts
       ansible.builtin.set_fact:
-        woodpecker_ci_agent_container: "{{ woodpecker_ci_agent_container_inspect.stdout | from_json | first }}"
+        woodpecker_ci_agent_container: "{{ woodpecker_ci_agent_container_raw.stdout | from_json | first }}"
 
     - name: Assert the Woodpecker CI agent container is running
       ansible.builtin.assert:
