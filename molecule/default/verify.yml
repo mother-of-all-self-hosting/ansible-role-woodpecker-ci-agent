@@ -78,12 +78,12 @@
     - name: Inspect the Woodpecker CI agent container image
       ansible.builtin.command:
         cmd: "docker image inspect {{ woodpecker_ci_agent_container.Image }}"
-      register: woodpecker_ci_agent_image_inspect
+      register: woodpecker_ci_agent_image_raw
       changed_when: false
 
     - name: Set the Woodpecker CI agent container image facts
       ansible.builtin.set_fact:
-        woodpecker_ci_agent_image: "{{ woodpecker_ci_agent_image_inspect.stdout | from_json | first }}"
+        woodpecker_ci_agent_image: "{{ woodpecker_ci_agent_image_raw.stdout | from_json | first }}"
 
     # The tag the role asks for could point anywhere. The image's own OCI
     # metadata is upstream's statement about which release it built.
