@@ -21,26 +21,27 @@
         file: "{{ lookup('env', 'MOLECULE_PROJECT_DIRECTORY') }}/defaults/main.yml"
         name: woodpecker_ci_agent_defaults
 
-    - name: Wait for Woodpecker CI agent service to become active (up to 180s)
-      ansible.builtin.systemd:
+    - name: Wait for the Woodpecker CI agent systemd service to become active (up to 180s)
+      ansible.builtin.systemd_service:
         name: "{{ woodpecker_ci_agent_identifier }}.service"
       register: woodpecker_ci_agent_service
       until: woodpecker_ci_agent_service.status.ActiveState == 'active'
       retries: 36
       delay: 5
+      # So that giving up is reported by the assertion below rather than as a
+      # wall of systemd unit properties.
+      failed_when: false
 
-    # This is the weakest rung of the ladder and it is here only to fail early
-    # with a clear message. An agent that cannot reach a server exits after
-    # about ten seconds, and `Restart=always` puts the unit straight back into
-    # `active`, so a flapping unit passes this check just as a working one
-    # does. Everything below distinguishes the two.
-    - name: Assert Woodpecker CI agent service is active
+    # `Restart=always` in the systemd unit means that even a container which crashes
+    # and gets restarted reads as active here, so this is a precondition rather than
+    # a result.
+    - name: Assert the Woodpecker CI agent systemd service is active
       ansible.builtin.assert:
         that: woodpecker_ci_agent_service.status.ActiveState == 'active'
-        fail_msg: "{{ woodpecker_ci_agent_identifier }}.service not active ({{ woodpecker_ci_agent_service.status.ActiveState }})"
+        fail_msg: "{{ woodpecker_ci_agent_identifier }}.service is not active ({{ woodpecker_ci_agent_service.status.ActiveState }})"
         success_msg: "{{ woodpecker_ci_agent_identifier }}.service is active"
 
-    - name: Retrieve Woodpecker CI agent service log for debugging
+    - name: Retrieve the Woodpecker CI agent systemd service log for debugging
       when: woodpecker_ci_agent_debug_service_enabled | bool
       ansible.builtin.command:
         cmd: "journalctl -xeu {{ woodpecker_ci_agent_identifier }}.service"
