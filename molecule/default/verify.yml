@@ -44,7 +44,7 @@
     - name: Retrieve the Woodpecker CI agent systemd service log for debugging
       when: woodpecker_ci_agent_debug_service_enabled | bool
       ansible.builtin.command:
-        cmd: "journalctl -xeu {{ woodpecker_ci_agent_identifier }}.service"
+        cmd: "journalctl --no-pager --output=cat --unit={{ woodpecker_ci_agent_identifier }}.service"
       changed_when: false
 
     - name: Inspect the Woodpecker CI agent container
