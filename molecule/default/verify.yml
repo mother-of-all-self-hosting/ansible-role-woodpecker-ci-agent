@@ -13,6 +13,8 @@
     woodpecker_ci_agent_molecule_server_database_path: >-
       {{ woodpecker_ci_agent_molecule_server_data_path }}/woodpecker.sqlite
   tasks:
+    - name: Verify that Woodpecker CI agent works
+      block:
     # The role is not included in this playbook, so its defaults are not in
     # scope. Reading defaults/main.yml directly ties the version assertion
     # below.
@@ -256,3 +258,19 @@
           - "Woodpecker CI agent image: {{ woodpecker_ci_agent_container.Config.Image }}"
           - "Upstream release label: {{ woodpecker_ci_agent_image.Config.Labels['org.opencontainers.image.version'] }}"
           - "Woodpecker CI server's view of the agent: {{ woodpecker_ci_agent_registration }}"
+
+      rescue:
+        # Whatever went wrong, the reason is almost always in the systemd service log.
+        - name: Retrieve the Woodpecker CI agent systemd service log
+          ansible.builtin.command:
+            cmd: journalctl --no-pager --output=cat --unit=woodpecker-ci-agent.service
+          register: woodpecker_ci_agent_service_log
+          changed_when: false
+
+        - name: Show the Woodpecker CI agent systemd service log
+          ansible.builtin.debug:
+            var: woodpecker_ci_agent_service_log.stdout_lines
+
+        - name: Fail because verification did not pass
+          ansible.builtin.fail:
+            msg: "Woodpecker CI agent verification failed. The systemd service log is printed above."
