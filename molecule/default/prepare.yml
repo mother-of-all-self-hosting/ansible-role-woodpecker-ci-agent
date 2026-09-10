@@ -40,10 +40,6 @@
   hosts: all
   become: true
   gather_facts: false
-  vars:
-    # The role derives `woodpecker_ci_agent_container_network` from the
-    # identifier, and the role's defaults are not in scope in this play.
-    woodpecker_ci_agent_molecule_container_network: woodpecker-ci-agent
   tasks:
     # The server and the agent are released in lockstep from the same upstream
     # repository and publish identical version tags, so the helper server is
@@ -71,7 +67,7 @@
     # container name.
     - name: Ensure the Woodpecker CI agent container network exists
       ansible.builtin.command:
-        cmd: "docker network create {{ woodpecker_ci_agent_molecule_container_network }}"
+        cmd: docker network create woodpecker-ci-agent
       register: woodpecker_ci_agent_molecule_network_creation
       changed_when: woodpecker_ci_agent_molecule_network_creation.rc == 0
       failed_when: >-
@@ -106,7 +102,7 @@
         cmd: >-
           docker run -d
           --name {{ woodpecker_ci_agent_molecule_server_identifier }}
-          --network {{ woodpecker_ci_agent_molecule_container_network }}
+          --network woodpecker-ci-agent
           -p 127.0.0.1:{{ woodpecker_ci_agent_molecule_server_http_bind_port }}:8000
           --mount type=bind,src={{ woodpecker_ci_agent_molecule_server_data_path }},dst=/var/lib/woodpecker
           --env WOODPECKER_AGENT_SECRET={{ woodpecker_ci_agent_molecule_agent_secret }}
