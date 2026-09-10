@@ -23,7 +23,7 @@
 
     - name: Wait for the Woodpecker CI agent systemd service to become active (up to 180s)
       ansible.builtin.systemd_service:
-        name: "{{ woodpecker_ci_agent_identifier }}.service"
+        name: woodpecker-ci-agent.service
       register: woodpecker_ci_agent_service
       until: woodpecker_ci_agent_service.status.ActiveState == 'active'
       retries: 36
@@ -38,18 +38,18 @@
     - name: Assert the Woodpecker CI agent systemd service is active
       ansible.builtin.assert:
         that: woodpecker_ci_agent_service.status.ActiveState == 'active'
-        fail_msg: "{{ woodpecker_ci_agent_identifier }}.service is not active ({{ woodpecker_ci_agent_service.status.ActiveState }})"
-        success_msg: "{{ woodpecker_ci_agent_identifier }}.service is active"
+        fail_msg: "woodpecker-ci-agent.service is not active ({{ woodpecker_ci_agent_service.status.ActiveState }})"
+        success_msg: "woodpecker-ci-agent.service is active"
 
     - name: Retrieve the Woodpecker CI agent systemd service log for debugging
       when: woodpecker_ci_agent_debug_service_enabled | bool
       ansible.builtin.command:
-        cmd: "journalctl --no-pager --output=cat --unit={{ woodpecker_ci_agent_identifier }}.service"
+        cmd: journalctl --no-pager --output=cat --unit=woodpecker-ci-agent.service
       changed_when: false
 
     - name: Inspect the Woodpecker CI agent container
       ansible.builtin.command:
-        cmd: "docker container inspect {{ woodpecker_ci_agent_identifier }}"
+        cmd: docker container inspect woodpecker-ci-agent
       register: woodpecker_ci_agent_container_raw
       changed_when: false
 

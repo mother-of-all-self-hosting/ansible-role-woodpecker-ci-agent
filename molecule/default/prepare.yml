@@ -43,7 +43,7 @@
   vars:
     # The role derives `woodpecker_ci_agent_container_network` from the
     # identifier, and the role's defaults are not in scope in this play.
-    woodpecker_ci_agent_molecule_container_network: "{{ woodpecker_ci_agent_identifier }}"
+    woodpecker_ci_agent_molecule_container_network: woodpecker-ci-agent
   tasks:
     # The server and the agent are released in lockstep from the same upstream
     # repository and publish identical version tags, so the helper server is

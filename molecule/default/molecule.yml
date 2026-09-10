@@ -78,13 +78,6 @@ provisioner:
         # does, through `woodpecker_ci_agent_container_extra_arguments_custom`.
         woodpecker_ci_agent_molecule_healthcheck_bind_port: 13000
 
-        # Variables for Woodpecker CI agent
-        #
-        # A scenario-specific identifier, so that the container, the container
-        # network and the systemd unit all carry the role's name and the
-        # scenario's.
-        woodpecker_ci_agent_identifier: woodpecker-ci-agent-default
-
         woodpecker_ci_agent_uid: 1000
         woodpecker_ci_agent_gid: 1000
 
