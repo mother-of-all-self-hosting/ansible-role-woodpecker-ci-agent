@@ -9,9 +9,14 @@
   hosts: all
   become: true
   gather_facts: false
+
   vars:
     woodpecker_ci_agent_molecule_server_database_path: >-
       {{ woodpecker_ci_agent_molecule_server_data_path }}/woodpecker.sqlite
+
+    woodpecker_ci_agent_verify_units:
+      - woodpecker-ci-agent.service
+
   tasks:
     - name: Verify that Woodpecker CI agent works
       block:
@@ -23,13 +28,14 @@
             file: "{{ lookup('env', 'MOLECULE_PROJECT_DIRECTORY') }}/defaults/main.yml"
             name: woodpecker_ci_agent_defaults
 
-        - name: Wait for the Woodpecker CI agent systemd service to become active (up to 180s)
+        - name: Wait for the Woodpecker CI agent systemd services to become active (up to 180s each)
           ansible.builtin.systemd_service:
-            name: woodpecker-ci-agent.service
-          register: woodpecker_ci_agent_service
-          until: woodpecker_ci_agent_service.status.ActiveState == 'active'
+            name: "{{ item }}"
+          register: woodpecker_ci_agent_services
+          until: woodpecker_ci_agent_services.status.ActiveState == 'active'
           retries: 36
           delay: 5
+          loop: "{{ woodpecker_ci_agent_verify_units }}"
           # So that giving up is reported by the assertion below rather than as a
           # wall of systemd unit properties.
           failed_when: false
@@ -37,17 +43,20 @@
         # `Restart=always` in the systemd unit means that even a container which crashes
         # and gets restarted reads as active here, so this is a precondition rather than
         # a result.
-        - name: Assert the Woodpecker CI agent systemd service is active
+        - name: Assert the Woodpecker CI agent systemd services are active
           ansible.builtin.assert:
-            that: woodpecker_ci_agent_service.status.ActiveState == 'active'
-            fail_msg: "woodpecker-ci-agent.service is not active ({{ woodpecker_ci_agent_service.status.ActiveState }})"
-            success_msg: "woodpecker-ci-agent.service is active"
+            that: woodpecker_ci_agent_services.results | map(attribute='status.ActiveState') | unique | list == ['active']
+            fail_msg: >-
+              Not every service is active:
+              {{ dict(woodpecker_ci_agent_verify_units | zip(woodpecker_ci_agent_services.results | map(attribute='status.ActiveState'))) }}
+            success_msg: "Every systemd service is active"
 
-        - name: Retrieve the Woodpecker CI agent systemd service log for debugging
+        - name: Retrieve the Woodpecker CI agent systemd services log for debugging
           when: woodpecker_ci_agent_debug_service_enabled | bool
           ansible.builtin.command:
-            cmd: journalctl --no-pager --output=cat --unit=woodpecker-ci-agent.service
+            cmd: "journalctl --no-pager --output=cat --unit={{ item }}"
           changed_when: false
+          loop: "{{ woodpecker_ci_agent_verify_units }}"
 
         - name: Inspect the Woodpecker CI agent container
           ansible.builtin.command:
@@ -254,7 +263,7 @@
         - name: Show the Woodpecker CI agent verification summary
           ansible.builtin.debug:
             msg:
-              - "Woodpecker CI agent systemd: {{ woodpecker_ci_agent_service.status.ActiveState }}"
+              - "Woodpecker CI agent systemd: {% for unit, state in woodpecker_ci_agent_verify_units | zip(woodpecker_ci_agent_services.results | map(attribute='status.ActiveState')) %}{{ unit }} ({{ state }}){% if not loop.last %}, {% endif %}{% endfor %}"
               - "Woodpecker CI agent image: {{ woodpecker_ci_agent_container.Config.Image }}"
               - "Upstream release label: {{ woodpecker_ci_agent_image.Config.Labels['org.opencontainers.image.version'] }}"
               - "Woodpecker CI server's view of the agent: {{ woodpecker_ci_agent_registration }}"
