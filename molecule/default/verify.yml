@@ -116,24 +116,24 @@
         # The agent serves this on port 3000, which the scenario publishes through
         # `woodpecker_ci_agent_container_extra_arguments_custom`. It answers only
         # while the agent considers itself connected to its server.
-        - name: Wait for the Woodpecker CI agent healthcheck endpoint to answer (up to 180s)
+        - name: Wait for the Woodpecker CI agent to report itself healthy (up to 180s)
           ansible.builtin.uri:
             url: "http://127.0.0.1:{{ woodpecker_ci_agent_molecule_healthcheck_bind_port }}/healthz"
             method: GET
             status_code: [200]
-          register: woodpecker_ci_agent_healthcheck
-          failed_when: false
-          until: woodpecker_ci_agent_healthcheck.status | default(-1) == 200
+          register: woodpecker_ci_agent_health
+          until: woodpecker_ci_agent_health.status | default(-1) == 200
           retries: 36
           delay: 5
+          # So that giving up is reported by the assertion below rather than as a
+          # wall of systemd unit properties.
+          failed_when: false
 
         - name: Assert the Woodpecker CI agent reports itself healthy
           ansible.builtin.assert:
-            that: woodpecker_ci_agent_healthcheck.status == 200
-            fail_msg: >-
-              The Woodpecker CI agent healthcheck endpoint answered
-              {{ woodpecker_ci_agent_healthcheck.status }}
-            success_msg: "The Woodpecker CI agent healthcheck endpoint answers 200"
+            that: woodpecker_ci_agent_health.status == 200
+            fail_msg: "The Woodpecker CI agent did not report itself healthy: {{ woodpecker_ci_agent_health.status | default('no response') }}"
+            success_msg: "The Woodpecker CI agent reports itself healthy"
 
         # The question that matters for an agent: does the server know about it?
         #

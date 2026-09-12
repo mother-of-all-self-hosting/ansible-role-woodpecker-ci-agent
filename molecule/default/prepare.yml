@@ -115,21 +115,21 @@
 
     # The server answers this endpoint only once its HTTP server is up, which
     # is also when its gRPC server is accepting agents.
-    - name: Wait for the helper Woodpecker CI server to become healthy (up to 180s)
+    - name: Wait for the helper Woodpecker CI server to report itself healthy (up to 180s)
       ansible.builtin.uri:
         url: "http://127.0.0.1:{{ woodpecker_ci_agent_molecule_server_http_bind_port }}/healthz"
         method: GET
         status_code: [204]
       register: woodpecker_ci_agent_molecule_server_health
-      failed_when: false
       until: woodpecker_ci_agent_molecule_server_health.status | default(-1) == 204
       retries: 36
       delay: 5
+      # So that giving up is reported by the assertion below rather than as a
+      # wall of systemd unit properties.
+      failed_when: false
 
-    - name: Assert the helper Woodpecker CI server is healthy
+    - name: Assert the helper Woodpecker CI server reports itself healthy
       ansible.builtin.assert:
         that: woodpecker_ci_agent_molecule_server_health.status == 204
-        fail_msg: >-
-          The helper Woodpecker CI server did not become healthy
-          ({{ woodpecker_ci_agent_molecule_server_health.status }})
-        success_msg: "The helper Woodpecker CI server is healthy"
+        fail_msg: "The helper Woodpecker CI server did not report itself healthy: {{ woodpecker_ci_agent_molecule_server_health.status | default('no response') }}"
+        success_msg: "The helper Woodpecker CI server reports itself healthy"
