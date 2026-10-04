@@ -25,9 +25,6 @@
     - name: Ensure Docker is installed for Woodpecker CI agent Molecule tests preparation
       ansible.builtin.include_role:
         name: ansible-role-docker
-      vars:
-        docker_daemon_options:
-          storage-driver: vfs
 
 # A Woodpecker CI agent is only meaningful against a Woodpecker CI server: it
 # dials the server over gRPC on startup and gives up when it cannot reach one.
