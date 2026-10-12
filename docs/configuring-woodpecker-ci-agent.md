@@ -26,7 +26,7 @@ This is an [Ansible](https://www.ansible.com/) role which installs the **agent**
 
 Woodpecker CI is a [Continuous Integration](https://en.wikipedia.org/wiki/Continuous_integration) engine which can build and deploy your code automatically after pushing to a [Gitea](gitea.md) or [Forgejo](forgejo.md) repository.
 
-See the project's [documentation](https://www.woodpecker-ci-agent.com/docs) to learn what Woodpecker CI agent does and why it might be useful to you.
+See the project's [documentation](https://woodpecker-ci.org/docs/intro) to learn what Woodpecker CI agent does and why it might be useful to you.
 
 ## Prerequisites
 
