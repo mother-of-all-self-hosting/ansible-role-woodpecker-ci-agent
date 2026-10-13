@@ -115,7 +115,7 @@ If you use the MASH playbook, the shortcut commands with the [`just` program](ht
 
 After running the command for installation, Woodpecker CI agent becomes available. The agent automatically registers with the Woodpecker CI server and takes jobs from it.
 
-Refer to [this page](https://woodpecker-ci.org/docs/administration/configuration/agent) on the documentation about its usage.
+Refer to [this page](https://woodpecker-ci.org/docs/administration/configuration/agent) on the documentation about the usage.
 
 ## Troubleshooting
 
