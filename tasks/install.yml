@@ -3,12 +3,14 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
 ---
+# Owned by root: the container runs as root with the Docker socket mounted, and the env file configures it.
+# Whoever owns the base path or the env file could make it run anything as root.
 - name: Ensure Woodpecker CI agent path exists
   ansible.builtin.file:
     path: "{{ item }}"
     state: directory
     mode: "0750"
-    owner: "{{ woodpecker_ci_agent_uid }}"
+    owner: root
     group: "{{ woodpecker_ci_agent_gid }}"
   with_items:
     - "{{ woodpecker_ci_agent_base_path }}"
@@ -18,7 +20,7 @@
     src: "{{ role_path }}/templates/{{ item }}.j2"
     dest: "{{ woodpecker_ci_agent_base_path }}/{{ item }}"
     mode: "0640"
-    owner: "{{ woodpecker_ci_agent_uid }}"
+    owner: root
     group: "{{ woodpecker_ci_agent_gid }}"
   with_items:
     - env

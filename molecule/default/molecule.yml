@@ -86,7 +86,6 @@ provisioner:
         # does, through `woodpecker_ci_agent_container_extra_arguments_custom`.
         woodpecker_ci_agent_molecule_healthcheck_bind_port: 13000
 
-        woodpecker_ci_agent_uid: 1000
         woodpecker_ci_agent_gid: 1000
 
         # `host:port` of the helper server's gRPC port, reached by container
