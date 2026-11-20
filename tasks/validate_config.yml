@@ -25,6 +25,5 @@
   when: "lookup('vars', item, default='') | string | length == 0"
   with_items:
     - woodpecker_ci_agent_gid
-    - woodpecker_ci_agent_container_network
     - woodpecker_ci_agent_config_server
     - woodpecker_ci_agent_config_agent_secret
