@@ -40,9 +40,11 @@ ExecStartPre={{ devture_systemd_docker_base_host_command_docker }} create \
       {{ arg }} \
       {% endfor %}
 
+{% if woodpecker_ci_agent_container_network != 'host' %}
 {% for network in woodpecker_ci_agent_container_additional_networks %}
 ExecStartPre={{ devture_systemd_docker_base_host_command_docker }} network connect {{ network }} {{ woodpecker_ci_agent_identifier }}
 {% endfor %}
+{% endif %}
 
 ExecStart={{ devture_systemd_docker_base_host_command_docker }} start --attach {{ woodpecker_ci_agent_identifier }}
 

@@ -25,7 +25,7 @@
         state: absent
 
     - name: Ensure Woodpecker CI agent container network does not exist
-      when: woodpecker_ci_agent_container_network_deletion_enabled
+      when: woodpecker_ci_agent_container_network_deletion_enabled and woodpecker_ci_agent_container_network != 'host'
       block:
         - name: Ensure Woodpecker CI agent container network does not exist via community.docker.docker_network
           when: devture_systemd_docker_base_container_network_creation_method == 'ansible-module'
